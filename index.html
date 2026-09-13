@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B2A4A">
 <link rel="icon" href="favicon.png" type="image/png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon-1.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -305,7 +305,7 @@
 <div id="authOverlay">
   <div class="auth-card">
     <h2>🔐 سجل الدرجات</h2>
-    <p class="sub">أدخل رمزك السري المكوّن من 4 أرقام — أول مرة تكتبه سيصير هو رمزك الخاص</p>
+    <p class="sub" id="authSub">جارِ التحقق من حالة الإعداد...</p>
     <div class="auth-error" id="authError"></div>
     <div class="auth-field">
       <label>الرمز السري (4 أرقام)</label>
@@ -317,7 +317,7 @@
     <div class="auth-links" style="justify-content:center;">
       <span id="authBusy" style="display:none;color:#8a7c52;">⏳ جارِ التحقق...</span>
     </div>
-    <p class="auth-hint">أول مرة تفتح البرنامج؟ اختر أي 4 أرقام تتذكرها واضغط دخول — سيصير هذا رمزك من الآن. ⚠️ احتفظ به بمكان آمن، فبدونه ما تقدر توصل لبياناتك.</p>
+    <p class="auth-hint" id="authHint">جارِ التحقق...</p>
   </div>
 </div>
 <div id="app">
@@ -1104,6 +1104,7 @@ function initFirebaseSync(){
         fbReady = false; fbUid = null;
         document.getElementById('authOverlay').style.display = 'flex';
         setCloudStatus('☁️ يتطلب تسجيل الدخول', '');
+        checkSetupStatus();
       }
     }, function(err){
       setCloudStatus('⚠️ خطأ بالمصادقة: '+(err && err.code ? err.code : 'غير معروف'), 'err');
@@ -1140,20 +1141,51 @@ function authErrorMessage(err){
 function pinToCreds(pin){
   return { email: 'pin-'+pin+'@grades-register.local', password: 'grade-secure-'+pin };
 }
+let isSetupDone = null; // null = unknown yet, true = a code already exists, false = first-time setup
+function checkSetupStatus(){
+  const hint = document.getElementById('authHint');
+  const sub = document.getElementById('authSub');
+  document.getElementById('authSubmitBtn').disabled = true;
+  fbDb.collection('meta').doc('setup').get().then(function(doc){
+    isSetupDone = !!(doc.exists && doc.data().configured);
+    if(isSetupDone){
+      sub.textContent = 'أدخل رمزك السري المكوّن من 4 أرقام';
+      hint.textContent = 'إذا نسيت رمزك، لا توجد طريقة لاستعادته إلا من نسخة احتياطية (JSON) محفوظة لديك.';
+    } else {
+      sub.textContent = 'لا يوجد رمز سري مُعدّ بعد — اختر رمزك الخاص المكوّن من 4 أرقام';
+      hint.textContent = '⚠️ هذا أول إعداد للبرنامج. الرمز اللي تختاره الآن سيصير هو الرمز الوحيد المقبول لاحقًا — احتفظ به بمكان آمن.';
+    }
+    document.getElementById('authSubmitBtn').disabled = false;
+  }).catch(function(err){
+    console.error(err);
+    document.getElementById('authSubmitBtn').disabled = false;
+  });
+}
 function attemptLogin(){
   clearAuthError();
   const pin = document.getElementById('authPin').value.trim();
   if(!/^\d{4}$/.test(pin)){ showAuthError('❌ أدخل رمزًا مكوّنًا من 4 أرقام بالضبط.'); return; }
+  if(isSetupDone===null){ showAuthError('⏳ الرجاء الانتظار لحظة ثم المحاولة مرة أخرى.'); return; }
   const creds = pinToCreds(pin);
   document.getElementById('authBusy').style.display = 'inline';
   document.getElementById('authSubmitBtn').disabled = true;
-  firebase.auth().signInWithEmailAndPassword(creds.email, creds.password).catch(function(err){
-    if(err && (err.code==='auth/user-not-found' || err.code==='auth/invalid-credential')){
-      return firebase.auth().createUserWithEmailAndPassword(creds.email, creds.password);
-    }
-    throw err;
-  }).catch(function(err){
-    showAuthError(authErrorMessage(err));
+
+  let action;
+  if(isSetupDone){
+    // Only the one previously-configured code may sign in — never auto-create another account.
+    action = firebase.auth().signInWithEmailAndPassword(creds.email, creds.password).catch(function(err){
+      throw { code: 'auth/wrong-pin' };
+    });
+  } else {
+    // First-time setup: this code becomes THE code, and gets locked in via meta/setup.
+    action = firebase.auth().createUserWithEmailAndPassword(creds.email, creds.password).then(function(){
+      return fbDb.collection('meta').doc('setup').set({configured:true, at: Date.now()});
+    });
+  }
+
+  action.catch(function(err){
+    if(err && err.code==='auth/wrong-pin'){ showAuthError('❌ الرمز السري غير صحيح.'); }
+    else{ showAuthError(authErrorMessage(err)); }
   }).finally(function(){
     document.getElementById('authBusy').style.display = 'none';
     document.getElementById('authSubmitBtn').disabled = false;
@@ -1166,10 +1198,14 @@ function changePin(){
   if(!/^\d{4}$/.test(newPin)){ alert('الرمز يجب أن يتكون من 4 أرقام بالضبط.'); return; }
   const creds = pinToCreds(newPin);
   const snapshot = JSON.parse(JSON.stringify(state));
+  const oldUser = firebase.auth().currentUser;
   firebase.auth().createUserWithEmailAndPassword(creds.email, creds.password).then(function(cred){
     return fbDb.collection('gradebooks').doc(cred.user.uid).set(snapshot);
   }).then(function(){
-    alert('✅ تم تغيير الرمز السري بنجاح. استخدم الرمز الجديد من الآن فصاعدًا.');
+    // Invalidate the old code completely so it can no longer be used to log in.
+    return oldUser.delete().catch(function(err){ console.warn('old pin cleanup skipped:', err && err.code); });
+  }).then(function(){
+    alert('✅ تم تغيير الرمز السري بنجاح. الرمز القديم لم يعد يعمل — استخدم الرمز الجديد من الآن فصاعدًا.');
   }).catch(function(err){
     alert(authErrorMessage(err));
   });
