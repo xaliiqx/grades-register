@@ -291,7 +291,8 @@
     body.print-lesson-mode{ margin:0; }
     @page{ size: A4 landscape; margin: 8mm; }
     #printOnlyLesson .no-print{ display:none !important; }
-    #printOnlyLesson .lesson-print-page{ page-break-inside:avoid; }
+    #printOnlyLesson .lesson-print-page{ page-break-inside:avoid; page-break-after: always; margin-bottom:0; }
+    #printOnlyLesson .lesson-print-page:last-child{ page-break-after: auto; }
   }
 
   #authOverlay{
@@ -586,7 +587,7 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn" onclick="window.print()">🖨️ طباعة الكل</button>
+          <button class="btn" onclick="printAllLessons()">🖨️ طباعة الكل</button>
         </div>
       </div>
       <div id="dailyPlanList"></div>
@@ -1543,6 +1544,13 @@ function printLesson(id){
   document.body.classList.add('print-lesson-mode');
   window.print();
 }
+function printAllLessons(){
+  const list = state.plan.daily;
+  if(list.length===0){ alert('لا يوجد دروس للطباعة.'); return; }
+  document.getElementById('printOnlyLesson').innerHTML = list.map(lessonPrintHTML).join('');
+  document.body.classList.add('print-lesson-mode');
+  window.print();
+}
 window.addEventListener('afterprint', function(){ document.body.classList.remove('print-lesson-mode'); });
 
 /* ---------- SAVE / IMPORT ---------- */
@@ -1654,12 +1662,12 @@ function loadFromCloud(){
           meta: data.meta || {school:'',grade:'',subject:'',teacher:'',year:''},
           sections: data.sections,
           monitor: data.monitor || {S1:{},S2:{}},
-          plan: data.plan || {daily: buildDefaultLessons(), annual: buildDefaultAnnual()}
+          plan: data.plan || {}
         };
         if(!state.monitor.S1) state.monitor.S1={};
         if(!state.monitor.S2) state.monitor.S2={};
-        if(!state.plan.daily) state.plan.daily=[];
-        if(!state.plan.annual) state.plan.annual=[];
+        if(!state.plan.daily || state.plan.daily.length===0) state.plan.daily = buildDefaultLessons();
+        if(!state.plan.annual || state.plan.annual.length===0) state.plan.annual = buildDefaultAnnual();
         fillMetaInputs();
         switchSection('overview');
         suppressNextSave = false;
