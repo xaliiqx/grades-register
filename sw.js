@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grades-register-v1';
+const CACHE_NAME = 'grades-register-v2';
 const APP_SHELL = [
   './grades-register.html',
   './manifest.json',
