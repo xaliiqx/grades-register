@@ -260,30 +260,76 @@
     font-family:'Cairo',sans-serif; font-size:13px; color:var(--ink); resize:vertical; background:var(--paper);
   }
   .lesson-actions{ padding:8px 14px 12px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid var(--line); }
-  .annual-card{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
-  .annual-card input.an-title{ width:100%; font-weight:700; font-size:14.5px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:8px; font-family:'Cairo',sans-serif; }
-  .annual-card textarea.an-body{ width:100%; min-height:90px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:'Cairo',sans-serif; font-size:13px; resize:vertical; }
+
+  /* Annual plan (card layout, mobile-friendly) */
+  .annual-divider{
+    position:relative; padding:9px 34px; border-radius:9px; margin-bottom:8px;
+    font-weight:800; font-size:13.5px; text-align:center;
+  }
+  .annual-divider input{
+    width:100%; background:transparent; border:none; text-align:center; font-weight:800; font-size:13.5px;
+    font-family:'Cairo',sans-serif; color:var(--ink);
+  }
+  .annual-divider .del-btn{ position:absolute; top:6px; left:8px; }
+  .annual-row-card{ border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden; background:#fff; }
+  .annual-row-head{ display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding:7px 8px; }
+  .annual-row-head .arh-tag{ font-size:11px; color:var(--ink-2); font-weight:600; }
+  .annual-row-head input{
+    border:1px solid rgba(27,42,74,0.25); border-radius:6px; padding:4px 6px; text-align:center;
+    font-family:'Cairo',sans-serif; font-size:12px; background:rgba(255,255,255,0.6); color:var(--ink);
+  }
+  .annual-row-head .arh-month{ width:78px; font-weight:700; }
+  .annual-row-head .arh-week{ width:38px; }
+  .annual-row-head .arh-page{ width:42px; }
+  .annual-row-head .del-btn{ margin-inline-start:auto; }
+  .annual-row-body{ padding:8px 10px; }
+  .annual-row-body textarea{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px;
+    font-family:'Cairo',sans-serif; font-size:13px; resize:vertical; min-height:46px; color:var(--ink);
+  }
+  @media (max-width:480px){
+    .annual-row-head .arh-month{ width:64px; font-size:11px; }
+    .annual-row-head .arh-week, .annual-row-head .arh-page{ width:34px; }
+    .annual-row-head .arh-tag{ font-size:10px; }
+  }
+
+  /* Annual plan table — deliberately NOT width:100% so it can scroll
+     horizontally on narrow screens instead of squeezing/truncating text */
+  table.annual-table{
+    border-collapse:collapse; font-size:13px; min-width:760px; width:max-content;
+  }
+  table.annual-table thead th{
+    background:var(--ink); color:#F3ECD8; font-weight:700; font-size:12.5px;
+    padding:9px 6px; text-align:center; white-space:nowrap;
+  }
+  table.annual-table tbody td{
+    border:1px solid var(--line); padding:4px; vertical-align:middle;
+  }
+  table.annual-table tbody tr:hover{ background:#F4EEDC; }
+  table.annual-table input{
+    min-width:0;
+  }
 
   #printOnlyLesson{ display:none; }
   .lesson-print-page{ font-family:'Cairo',sans-serif; color:#000; }
   .lp-head{
-    background:#1B2A4A; color:#fff; display:flex; align-items:center; gap:10px; padding:8px 12px;
-    border:1px solid #333; border-bottom:none;
+    background:#1B2A4A; color:#fff; display:flex; align-items:center; gap:14px; padding:14px 18px;
+    border:2px solid #000; border-bottom:none;
   }
-  .lp-num{ background:#AD8A4E; color:#fff; border-radius:6px; padding:3px 10px; font-weight:800; font-size:12px; }
-  .lp-title{ flex:1; font-weight:800; font-size:15px; }
-  .lp-meta{ font-size:11.5px; }
-  .lp-sub{ border:1px solid #333; border-top:none; padding:6px 12px; font-size:11.5px; background:#F6F1E4; }
-  .lp-grid{ display:grid; grid-template-columns:1fr 2fr; border:1px solid #333; border-top:none; }
-  .lp-side{ border-inline-end:1px solid #333; display:flex; flex-direction:column; }
+  .lp-num{ background:#AD8A4E; color:#fff; border-radius:8px; padding:6px 16px; font-weight:800; font-size:18px; }
+  .lp-title{ flex:1; font-weight:800; font-size:26px; }
+  .lp-meta{ font-size:16px; font-weight:600; }
+  .lp-sub{ border:2px solid #000; border-top:none; padding:10px 18px; font-size:16px; background:#F6F1E4; }
+  .lp-grid{ display:grid; grid-template-columns:1fr 2fr; border:2px solid #000; border-top:none; }
+  .lp-side{ border-inline-end:2px solid #000; display:flex; flex-direction:column; }
   .lp-main{ display:flex; flex-direction:column; }
-  .lp-box{ border-bottom:1px solid #999; padding:6px 10px; }
+  .lp-box{ border-bottom:1.5px solid #555; padding:12px 18px; }
   .lp-box:last-child{ border-bottom:none; }
-  .lp-box h4{ margin:0 0 3px; font-size:11px; color:#8C6D34; }
-  .lp-box div{ font-size:10.5px; line-height:1.5; white-space:pre-wrap; }
+  .lp-box h4{ margin:0 0 6px; font-size:16px; font-weight:800; color:#8C6D34; }
+  .lp-box div{ font-size:15px; line-height:1.65; white-space:pre-wrap; }
   .lp-footer{
-    border:1px solid #333; border-top:none; padding:8px 12px; display:flex; justify-content:space-between;
-    flex-wrap:wrap; gap:8px; font-size:11px;
+    border:2px solid #000; border-top:none; padding:12px 18px; display:flex; justify-content:space-between;
+    flex-wrap:wrap; gap:10px; font-size:15px; font-weight:700;
   }
   @media print{
     body.print-lesson-mode #app > *:not(#printOnlyLesson){ display:none !important; }
@@ -293,6 +339,9 @@
     #printOnlyLesson .no-print{ display:none !important; }
     #printOnlyLesson .lesson-print-page{ page-break-inside:avoid; page-break-after: always; margin-bottom:0; }
     #printOnlyLesson .lesson-print-page:last-child{ page-break-after: auto; }
+    #printOnlyLesson .lp-head, #printOnlyLesson .lp-num{
+      -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
+    }
   }
 
   #authOverlay{
@@ -1443,40 +1492,26 @@ function renderAnnualPlan(){
   const empty = document.getElementById('annualPlanEmpty');
   if(rows.length===0){ container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-  // group consecutive 'row' entries sharing the same month for rowspan
-  const spans = new Array(rows.length).fill(1);
-  const skip = new Array(rows.length).fill(false);
-  for(let i=0;i<rows.length;i++){
-    if(rows[i].kind!=='row' || skip[i]) continue;
-    let j=i+1, count=1;
-    while(j<rows.length && rows[j].kind==='row' && rows[j].month===rows[i].month){ skip[j]=true; count++; j++; }
-    spans[i]=count;
-  }
-  let html = '<table class="grades" id="annualTable"><thead><tr>'
-    +'<th style="width:70px;">الشهر</th><th style="width:55px;">الاسبوع</th><th style="width:50px;">من</th><th style="width:50px;">الى</th>'
-    +'<th>المفردات</th><th class="no-print" style="width:34px;"></th></tr></thead><tbody>';
-  rows.forEach(function(r,i){
+  container.innerHTML = rows.map(function(r){
     if(r.kind!=='row'){
       const bg = r.kind==='special' ? '#F6D9D9' : '#EFE4C9';
-      html += '<tr><td colspan="5" style="background:'+bg+';font-weight:800;text-align:center;">'
-        +'<input value="'+escAttr(r.topic)+'" style="width:100%;text-align:center;font-weight:800;background:transparent;border:none;font-family:Cairo,sans-serif;font-size:13.5px;" onchange="updateAnnualField(\''+r.id+'\',\'topic\',this.value)"></td>'
-        +'<td class="no-print"><button class="del-btn" onclick="deleteAnnualEntry(\''+r.id+'\')">✕</button></td></tr>';
-      return;
+      return '<div class="annual-divider" style="background:'+bg+';">'
+        +'<input value="'+escAttr(r.topic)+'" onchange="updateAnnualField(\''+r.id+'\',\'topic\',this.value)">'
+        +'<button class="del-btn no-print" onclick="deleteAnnualEntry(\''+r.id+'\')">✕</button>'
+      +'</div>';
     }
-    if(skip[i]) return;
-    const bg = MONTH_COLORS[r.month] || '#EFE8D6';
-    html += '<tr>'
-      +'<td rowspan="'+spans[i]+'" style="background:'+bg+';font-weight:800;">'
-        +'<input value="'+escAttr(r.month)+'" style="width:100%;text-align:center;background:transparent;border:none;font-weight:800;font-family:Cairo,sans-serif;" onchange="updateAnnualField(\''+r.id+'\',\'month\',this.value)"></td>'
-      +'<td><input value="'+escAttr(r.week)+'" style="width:100%;text-align:center;background:transparent;border:none;font-family:Cairo,sans-serif;" onchange="updateAnnualField(\''+r.id+'\',\'week\',this.value)"></td>'
-      +'<td><input value="'+escAttr(r.pageFrom)+'" style="width:100%;text-align:center;background:transparent;border:none;font-family:Cairo,sans-serif;" onchange="updateAnnualField(\''+r.id+'\',\'pageFrom\',this.value)"></td>'
-      +'<td><input value="'+escAttr(r.pageTo)+'" style="width:100%;text-align:center;background:transparent;border:none;font-family:Cairo,sans-serif;" onchange="updateAnnualField(\''+r.id+'\',\'pageTo\',this.value)"></td>'
-      +'<td style="text-align:start;padding-inline-start:10px;"><input value="'+escAttr(r.topic)+'" style="width:100%;background:transparent;border:none;font-family:Cairo,sans-serif;" onchange="updateAnnualField(\''+r.id+'\',\'topic\',this.value)"></td>'
-      +'<td class="no-print"><button class="del-btn" onclick="deleteAnnualEntry(\''+r.id+'\')">✕</button></td>'
-      +'</tr>';
-  });
-  html += '</tbody></table>';
-  container.innerHTML = html;
+    const bg = MONTH_COLORS[r.month] || 'var(--paper-2)';
+    return '<div class="annual-row-card">'
+      +'<div class="annual-row-head" style="background:'+bg+';">'
+        +'<input class="arh-month" value="'+escAttr(r.month)+'" placeholder="الشهر" onchange="updateAnnualField(\''+r.id+'\',\'month\',this.value)">'
+        +'<span class="arh-tag">أسبوع</span><input class="arh-week" value="'+escAttr(r.week)+'" onchange="updateAnnualField(\''+r.id+'\',\'week\',this.value)">'
+        +'<span class="arh-tag">صفحة من</span><input class="arh-page" value="'+escAttr(r.pageFrom)+'" onchange="updateAnnualField(\''+r.id+'\',\'pageFrom\',this.value)">'
+        +'<span class="arh-tag">الى</span><input class="arh-page" value="'+escAttr(r.pageTo)+'" onchange="updateAnnualField(\''+r.id+'\',\'pageTo\',this.value)">'
+        +'<button class="del-btn no-print" onclick="deleteAnnualEntry(\''+r.id+'\')">✕</button>'
+      +'</div>'
+      +'<div class="annual-row-body"><textarea rows="2" onchange="updateAnnualField(\''+r.id+'\',\'topic\',this.value)">'+escHtml(r.topic)+'</textarea></div>'
+    +'</div>';
+  }).join('');
 }
 function addAnnualEntry(){
   state.plan.annual.push({id:uid(), kind:'row', month:'', week:'', pageFrom:'', pageTo:'', topic:''});
