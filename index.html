@@ -313,24 +313,31 @@
   #printOnlyLesson{ display:none; }
   .lesson-print-page{ font-family:'Cairo',sans-serif; color:#000; }
   .lp-head{
-    background:#1B2A4A; color:#fff; display:flex; align-items:center; gap:14px; padding:14px 18px;
-    border:2px solid #000; border-bottom:none;
+    background:#1B2A4A; color:#fff; display:flex; align-items:center; gap:16px; padding:18px 22px;
+    border:2.5px solid #000; border-bottom:none;
   }
-  .lp-num{ background:#AD8A4E; color:#fff; border-radius:8px; padding:6px 16px; font-weight:800; font-size:18px; }
-  .lp-title{ flex:1; font-weight:800; font-size:26px; }
-  .lp-meta{ font-size:16px; font-weight:600; }
-  .lp-sub{ border:2px solid #000; border-top:none; padding:10px 18px; font-size:16px; background:#F6F1E4; }
-  .lp-grid{ display:grid; grid-template-columns:1fr 2fr; border:2px solid #000; border-top:none; }
-  .lp-side{ border-inline-end:2px solid #000; display:flex; flex-direction:column; }
+  .lp-num{ background:#AD8A4E; color:#fff; border-radius:9px; padding:8px 20px; font-weight:800; font-size:22px; }
+  .lp-title{ flex:1; font-weight:800; font-size:34px; }
+  .lp-meta{ font-size:19px; font-weight:600; }
+  .lp-sub{ border:2.5px solid #000; border-top:none; padding:14px 22px; font-size:20px; background:#F6F1E4; }
+  .lp-grid{ display:grid; grid-template-columns:1fr 2fr; border:2.5px solid #000; border-top:none; }
+  .lp-side{ border-inline-end:2.5px solid #000; display:flex; flex-direction:column; }
   .lp-main{ display:flex; flex-direction:column; }
-  .lp-box{ border-bottom:1.5px solid #555; padding:12px 18px; }
+  .lp-box{ border-bottom:2px solid #555; padding:16px 22px; flex:1; }
   .lp-box:last-child{ border-bottom:none; }
-  .lp-box h4{ margin:0 0 6px; font-size:16px; font-weight:800; color:#8C6D34; }
-  .lp-box div{ font-size:15px; line-height:1.65; white-space:pre-wrap; }
+  .lp-box h4{ margin:0 0 9px; font-size:20px; font-weight:800; color:#8C6D34; }
+  .lp-box div{ font-size:19px; line-height:1.75; white-space:pre-wrap; }
   .lp-footer{
-    border:2px solid #000; border-top:none; padding:12px 18px; display:flex; justify-content:space-between;
-    flex-wrap:wrap; gap:10px; font-size:15px; font-weight:700;
+    border:2.5px solid #000; border-top:none; padding:16px 22px; display:flex; justify-content:space-between;
+    flex-wrap:wrap; gap:12px; font-size:19px; font-weight:700;
   }
+  /* Annual plan print view (table, matches original template) */
+  .ap-print-page{ font-family:'Cairo',sans-serif; color:#000; }
+  .ap-title{ font-weight:800; font-size:22px; text-align:center; padding:10px; border:2.5px solid #000; border-bottom:none; background:#EFE4C9; }
+  .ap-table{ width:100%; border-collapse:collapse; border:2.5px solid #000; font-size:14px; }
+  .ap-table th{ background:#1B2A4A; color:#fff; padding:8px 6px; border:1.5px solid #000; font-size:14px; }
+  .ap-table td{ border:1.5px solid #000; padding:7px 6px; text-align:center; font-weight:600; }
+  .ap-footer{ border:2.5px solid #000; border-top:none; padding:10px 16px; display:flex; justify-content:space-between; font-size:15px; font-weight:700; }
   @media print{
     body.print-lesson-mode #app > *:not(#printOnlyLesson){ display:none !important; }
     body.print-lesson-mode #printOnlyLesson{ display:block !important; }
@@ -340,6 +347,9 @@
     #printOnlyLesson .lesson-print-page{ page-break-inside:avoid; page-break-after: always; margin-bottom:0; }
     #printOnlyLesson .lesson-print-page:last-child{ page-break-after: auto; }
     #printOnlyLesson .lp-head, #printOnlyLesson .lp-num{
+      -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
+    }
+    #printOnlyLesson .ap-table th, #printOnlyLesson .ap-table td, #printOnlyLesson .ap-title{
       -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
     }
   }
@@ -653,7 +663,7 @@
           <button class="btn" onclick="addAnnualChapter()">➕ إضافة عنوان فصل</button>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn" onclick="window.print()">🖨️ طباعة</button>
+          <button class="btn" onclick="printAnnualPlan()">🖨️ طباعة</button>
         </div>
       </div>
       <div style="overflow-x:auto;">
@@ -1583,6 +1593,43 @@ function printAllLessons(){
   const list = state.plan.daily;
   if(list.length===0){ alert('لا يوجد دروس للطباعة.'); return; }
   document.getElementById('printOnlyLesson').innerHTML = list.map(lessonPrintHTML).join('');
+  document.body.classList.add('print-lesson-mode');
+  window.print();
+}
+function printAnnualPlan(){
+  const rows = state.plan.annual;
+  if(rows.length===0){ alert('الخطة السنوية فارغة.'); return; }
+  const spans = new Array(rows.length).fill(1);
+  const skip = new Array(rows.length).fill(false);
+  for(let i=0;i<rows.length;i++){
+    if(rows[i].kind!=='row' || skip[i]) continue;
+    let j=i+1, count=1;
+    while(j<rows.length && rows[j].kind==='row' && rows[j].month===rows[i].month){ skip[j]=true; count++; j++; }
+    spans[i]=count;
+  }
+  let html = '<div class="ap-print-page">'
+    +'<div class="ap-title">الخطة السنوية '+escAttr(state.meta.grade||'')+' — '+escAttr(state.meta.year||'')+'</div>'
+    +'<table class="ap-table"><thead><tr>'
+    +'<th style="width:9%;">الشهر</th><th style="width:8%;">الاسبوع</th><th style="width:8%;">من</th><th style="width:8%;">الى</th>'
+    +'<th>المفردات</th></tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    if(r.kind!=='row'){
+      const bg = r.kind==='special' ? '#F6D9D9' : '#EFE4C9';
+      html += '<tr><td colspan="5" style="background:'+bg+';font-weight:800;text-align:center;">'+escAttr(r.topic)+'</td></tr>';
+      return;
+    }
+    if(skip[i]) return;
+    const bg = MONTH_COLORS[r.month] || '#EFE8D6';
+    html += '<tr>'
+      +'<td rowspan="'+spans[i]+'" style="background:'+bg+';font-weight:800;">'+escAttr(r.month)+'</td>'
+      +'<td>'+escAttr(r.week)+'</td><td>'+escAttr(r.pageFrom)+'</td><td>'+escAttr(r.pageTo)+'</td>'
+      +'<td style="text-align:start;padding-inline-start:10px;">'+escAttr(r.topic)+'</td>'
+      +'</tr>';
+  });
+  html += '</tbody></table>'
+    +'<div class="ap-footer"><span><b>مدرس المادة:</b> '+escAttr(state.meta.teacher||'')+'</span><span><b>المدرسة:</b> '+escAttr(state.meta.school||'')+'</span></div>'
+    +'</div>';
+  document.getElementById('printOnlyLesson').innerHTML = html;
   document.body.classList.add('print-lesson-mode');
   window.print();
 }
