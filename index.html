@@ -326,10 +326,10 @@
   .lp-box{ border-bottom:1.5px solid #555; padding:7px 14px; flex:1; }
   .lp-box:last-child{ border-bottom:none; }
   .lp-box h4{ margin:0 0 3px; font-size:13px; font-weight:800; color:#8C6D34; }
-  .lp-box div{ font-size:12.5px; line-height:1.42; white-space:pre-wrap; }
-  .lp-notes{ border:2px solid #000; border-top:none; padding:8px 14px 6px; }
+  .lp-box div{ font-size:13px; line-height:1.45; white-space:pre-wrap; font-weight:500; }
+  .lp-notes{ border:2px solid #000; border-top:none; padding:8px 14px 6px; display:flex; flex-direction:column; }
   .lp-notes h4{ margin:0 0 6px; font-size:13px; font-weight:800; color:#8C6D34; }
-  .lp-notes-lines{ height:66px; background-image: repeating-linear-gradient(transparent, transparent 21px, #999 22px); }
+  .lp-notes-lines{ flex:1; min-height:66px; background-image: repeating-linear-gradient(transparent, transparent 21px, #999 22px); }
   .lp-footer{
     border:2px solid #000; border-top:none; padding:7px 14px; display:flex; justify-content:space-between;
     flex-wrap:wrap; gap:10px; font-size:12.5px; font-weight:700;
@@ -349,8 +349,14 @@
     body.print-lesson-mode{ margin:0; }
     @page{ size: A4 landscape; margin: 8mm; }
     #printOnlyLesson .no-print{ display:none !important; }
-    #printOnlyLesson .lesson-print-page{ page-break-inside:avoid; page-break-after: always; margin-bottom:0; }
+    #printOnlyLesson .lesson-print-page{
+      page-break-inside:avoid; page-break-after: always; margin-bottom:0;
+      height:190mm; display:flex; flex-direction:column;
+    }
     #printOnlyLesson .lesson-print-page:last-child{ page-break-after: auto; }
+    #printOnlyLesson .lp-grid, #printOnlyLesson .lp-head, #printOnlyLesson .lp-sub{ flex:0 0 auto; }
+    #printOnlyLesson .lp-notes{ flex:1 1 auto; min-height:0; }
+    #printOnlyLesson .lp-footer{ flex:0 0 auto; }
     #printOnlyLesson .lp-head, #printOnlyLesson .lp-num{
       -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
     }
