@@ -546,6 +546,7 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn" onclick="window.print()">🖨️ طباعة</button>
+        <button class="btn" onclick="openWheel()">🎡 عجلة الاختيار</button>
         <button class="btn" onclick="exportExcel()">📊 تصدير Excel</button>
       </div>
     </div>
@@ -613,6 +614,7 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn" onclick="window.print()">🖨️ طباعة</button>
+        <button class="btn" onclick="openWheel()">🎡 عجلة الاختيار</button>
         <button class="btn" onclick="exportMonitorExcel()">📊 تصدير Excel</button>
       </div>
     </div>
@@ -1979,6 +1981,117 @@ function triggerInstall(){
     deferredInstallPrompt = null;
     document.getElementById('installBtn').style.display = 'none';
   });
+}
+</script>
+
+<style>
+#wheelModal{position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:9999;display:none;align-items:center;justify-content:center;padding:12px}
+#wheelModal.open{display:flex}
+.wheel-box{background:#fff;border-radius:18px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:'Cairo',sans-serif}
+.wheel-head{background:linear-gradient(90deg,#E0701B,#C8501E);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.wheel-head button{background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+.wheel-body{padding:14px;text-align:center}
+.wheel-wrap{position:relative;width:min(80vw,340px);aspect-ratio:1;margin:0 auto}
+.wheel-wrap canvas{width:100%;height:100%}
+.wheel-ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:20px solid #B0123A;z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+#wheelResult{min-height:44px;margin:10px 0 4px;font-size:22px;font-weight:800;color:#C8501E}
+.wheel-opt{font-size:13px;color:#555;display:flex;gap:6px;justify-content:center;align-items:center;margin:4px 0}
+.wheel-btns{display:flex;gap:8px;margin-top:8px}
+.wheel-btns button{flex:1;border:0;border-radius:12px;padding:12px;font:700 15px 'Cairo',sans-serif;color:#fff;cursor:pointer;background:linear-gradient(90deg,#E0701B,#C8501E)}
+.wheel-btns button.alt{background:var(--ink,#1B2A4A)}
+.wheel-btns button:disabled{opacity:.5}
+</style>
+<div id="wheelModal" class="no-print" onclick="if(event.target===this)closeWheel()">
+ <div class="wheel-box">
+  <div class="wheel-head"><span>🎡 عجلة اختيار الطلاب العادلة</span><button onclick="closeWheel()">✕</button></div>
+  <div class="wheel-body">
+   <div class="wheel-wrap"><div class="wheel-ptr"></div><canvas id="wheelCanvas" width="680" height="680"></canvas></div>
+   <div id="wheelResult"></div>
+   <label class="wheel-opt"><input type="checkbox" id="wheelNoRepeat" checked onchange="wheelRedraw()"> عدم تكرار الطالب حتى ينتهي الجميع</label>
+   <div class="wheel-opt" id="wheelInfo"></div>
+   <div class="wheel-btns"><button id="wheelSpinBtn" onclick="wheelSpin(false)">▶ ابدأ الدوران</button><button class="alt" id="wheelAutoBtn" onclick="wheelSpin(true)">⚡ اختيار تلقائي</button></div>
+   <div class="wheel-btns"><button class="alt" onclick="wheelReset()">↺ تصفير القائمة</button></div>
+  </div>
+ </div>
+</div>
+<script>
+var wheelPicked={}, wheelAngle=0, wheelBusy=false, wheelPool=[];
+var WHEEL_COLORS=['#E8453C','#F28C28','#F2C12E','#4CAF50','#1FA8A0','#2F7FD8','#7C4DDB','#D63FA0'];
+function wheelNames(){
+  var list=(state.sections[currentSection]||[]).filter(function(s){return (s.name||'').trim();});
+  var picked=wheelPicked[currentSection]||(wheelPicked[currentSection]={});
+  if(document.getElementById('wheelNoRepeat').checked){
+    var rem=list.filter(function(s){return !picked[s.id];});
+    if(!rem.length && list.length){ wheelPicked[currentSection]={}; rem=list; }
+    return {all:list,pool:rem};
+  }
+  return {all:list,pool:list};
+}
+function openWheel(){
+  if(currentSection==='overview'){ alert('اختر شعبة أولاً'); return; }
+  document.getElementById('wheelResult').textContent='الدوران جاهز… نتمنى التوفيق للجميع!';
+  document.getElementById('wheelModal').classList.add('open'); wheelRedraw();
+}
+function closeWheel(){ if(!wheelBusy) document.getElementById('wheelModal').classList.remove('open'); }
+function wheelReset(){ if(wheelBusy) return; wheelPicked[currentSection]={}; wheelRedraw(); }
+function wheelRedraw(){
+  var w=wheelNames(); wheelPool=w.pool;
+  var info=document.getElementById('wheelInfo');
+  info.textContent='المتبقي: '+w.pool.length+' من '+w.all.length+' — الشعبة '+currentSection;
+  var c=document.getElementById('wheelCanvas'), g=c.getContext('2d'), R=c.width/2, n=w.pool.length;
+  g.clearRect(0,0,c.width,c.height);
+  if(!n){ g.fillStyle='#999'; g.font='bold 34px Cairo'; g.textAlign='center'; g.fillText('لا توجد أسماء في هذه الشعبة',R,R); return; }
+  var a=2*Math.PI/n;
+  g.save(); g.translate(R,R); g.rotate(wheelAngle);
+  for(var i=0;i<n;i++){
+    g.beginPath(); g.moveTo(0,0); g.arc(0,0,R-14,i*a,(i+1)*a); g.closePath();
+    g.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length]; g.fill();
+    g.strokeStyle='rgba(255,255,255,.7)'; g.lineWidth=2; g.stroke();
+    if(n<=60){
+      g.save(); g.rotate(i*a+a/2); g.fillStyle='#fff'; g.textAlign='right'; g.textBaseline='middle';
+      var fs=Math.max(12,Math.min(30,(R-60)*a*0.7)); g.font='bold '+fs+'px Cairo';
+      var nm=w.pool[i].name.trim(); if(nm.length>22) nm=nm.slice(0,22)+'…';
+      g.shadowColor='rgba(0,0,0,.5)'; g.shadowBlur=3;
+      g.fillText(nm,R-40,0); g.restore();
+    }
+  }
+  g.restore();
+  g.beginPath(); g.arc(R,R,34,0,2*Math.PI); g.fillStyle='#fff'; g.fill(); g.strokeStyle='#E0A82E'; g.lineWidth=6; g.stroke();
+  g.beginPath(); g.arc(R,R,R-8,0,2*Math.PI); g.strokeStyle='#E0A82E'; g.lineWidth=8; g.stroke();
+}
+function wheelBeep(f,d){
+  try{ var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    window._wac=window._wac||new AC(); var o=_wac.createOscillator(), gn=_wac.createGain();
+    o.frequency.value=f; gn.gain.value=.05; o.connect(gn); gn.connect(_wac.destination); o.start(); o.stop(_wac.currentTime+d); }catch(e){}
+}
+function wheelSpin(auto){
+  if(wheelBusy) return;
+  wheelRedraw(); var n=wheelPool.length; if(!n) return;
+  var idx=Math.floor(Math.random()*n), a=2*Math.PI/n;
+  var res=document.getElementById('wheelResult');
+  function finish(){
+    var s=wheelPool[idx];
+    if(document.getElementById('wheelNoRepeat').checked) (wheelPicked[currentSection]||(wheelPicked[currentSection]={}))[s.id]=true;
+    res.textContent='🎉 '+s.name; wheelBeep(880,.25); setTimeout(function(){wheelBeep(1175,.35);},180);
+    wheelRedraw(); document.getElementById('wheelInfo').textContent+=' — آخر اختيار: '+s.name;
+  }
+  if(auto){ wheelAngle=-Math.PI/2-(idx+0.5)*a; res.textContent=''; finish(); return; }
+  wheelBusy=true; res.textContent='الدوران جاري…';
+  document.getElementById('wheelSpinBtn').disabled=true; document.getElementById('wheelAutoBtn').disabled=true;
+  var start=wheelAngle%(2*Math.PI), jitter=(Math.random()-.5)*a*.7;
+  var target=-Math.PI/2-(idx+0.5)*a+jitter; target=target%(2*Math.PI);
+  while(target<start) target+=2*Math.PI;
+  target+=2*Math.PI*(5+Math.floor(Math.random()*3));
+  var dur=4800, t0=performance.now(), lastTick=-1;
+  function step(now){
+    var p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,4);
+    wheelAngle=start+(target-start)*e; wheelRedraw();
+    var tk=Math.floor((wheelAngle)/a); if(tk!==lastTick){ lastTick=tk; if(p<.97) wheelBeep(520,.02); }
+    if(p<1) requestAnimationFrame(step);
+    else { wheelAngle=target%(2*Math.PI); wheelBusy=false;
+      document.getElementById('wheelSpinBtn').disabled=false; document.getElementById('wheelAutoBtn').disabled=false; finish(); }
+  }
+  requestAnimationFrame(step);
 }
 </script>
 </body>
