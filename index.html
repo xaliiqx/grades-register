@@ -1167,6 +1167,34 @@ function deleteStudent(id){
 }
 const SEM_A_MONTHS = ['m1a','m2a','m3a'];
 const SEM_B_MONTHS = ['m1b','m2b','m3b'];
+function dv(v){ return (v===0||v==='0'||v==null||v===''||isNaN(Number(v))) ? '' : v; }
+document.addEventListener('keydown', function(e){
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('cell-input')) return;
+  const k = e.key;
+  if(!['Enter','ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(k)) return;
+  const row = el.closest('tr'); if(!row) return;
+  const tbody = row.parentElement;
+  const inputsOf = r => Array.from(r.querySelectorAll('input.cell-input'));
+  let target = null;
+  if(k==='ArrowDown' || k==='ArrowUp' || (k==='Enter' && e.shiftKey)){
+    const up = (k==='ArrowUp' || (k==='Enter' && e.shiftKey));
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const i = rows.indexOf(row) + (up?-1:1);
+    if(rows[i]) target = inputsOf(rows[i]).find(x=>x.dataset.field===el.dataset.field);
+  } else {
+    const back = (k==='ArrowRight');
+    const ins = inputsOf(row); const j = ins.indexOf(el) + (back?-1:1);
+    if(ins[j]) target = ins[j];
+    else if(k==='Enter'){
+      const rows = Array.from(tbody.querySelectorAll('tr')); const nr = rows[rows.indexOf(row)+1];
+      if(nr) target = inputsOf(nr)[0];
+    }
+  }
+  e.preventDefault();
+  if(target){ target.focus(); target.select(); }
+  else el.blur();
+});
 function updateField(id, field, value){
   const s = state.sections[currentSection].find(x=>x.id===id);
   if(!s) return;
@@ -1207,7 +1235,7 @@ function refreshDerivedRow(s){
 }
 function setInputIfNotFocused(row, field, val){
   const el = row.querySelector('input[data-field="'+field+'"]');
-  if(el && document.activeElement!==el){ el.value = val; }
+  if(el && document.activeElement!==el){ el.value = dv(val); }
 }
 function updateResetBtn(row, sid, field, manual){
   const td = row.querySelector('input[data-field="'+field+'"]');
@@ -1276,11 +1304,11 @@ function renderTable(){
   updateTabCounts();
 }
 function numCell(id, field, val){
-  return '<td><input class="cell-input" type="number" min="0" data-field="'+field+'" value="'+val+'" onchange="updateField(\''+id+'\',\''+field+'\',this.value)"></td>';
+  return '<td><input class="cell-input" type="number" min="0" inputmode="decimal" enterkeyhint="next" onfocus="this.select()" data-field="'+field+'" value="'+dv(val)+'" onchange="updateField(\''+id+'\',\''+field+'\',this.value)"></td>';
 }
 function computedCell(s, field, manualField){
   const resetBtn = s[manualField] ? '<button class="del-btn reset-btn" style="width:20px;height:20px;font-size:10px;position:absolute;top:2px;left:0;border-color:var(--gold);color:var(--gold-dark);" title="إعادة الاحتساب تلقائيًا" onclick="resetComputed(\''+s.id+'\',\''+field+'\',\''+manualField+'\')">↻</button>' : '';
-  return '<td style="position:relative;"><input class="cell-input" type="number" min="0" data-field="'+field+'" value="'+s[field]+'" onchange="updateField(\''+s.id+'\',\''+field+'\',this.value)">'+resetBtn+'</td>';
+  return '<td style="position:relative;"><input class="cell-input" type="number" min="0" inputmode="decimal" enterkeyhint="next" onfocus="this.select()" data-field="'+field+'" value="'+dv(s[field])+'" onchange="updateField(\''+s.id+'\',\''+field+'\',this.value)">'+resetBtn+'</td>';
 }
 function escAttr(v){ return (v||'').replace(/"/g,'&quot;'); }
 
@@ -1337,7 +1365,7 @@ function refreshMonitorRow(id, rec){
   const row = document.querySelector('tr[data-mrow="'+id+'"]');
   if(!row) return;
   const oralInput = row.querySelector('input[data-field="oral"]');
-  if(oralInput && document.activeElement!==oralInput) oralInput.value = rec.oral;
+  if(oralInput && document.activeElement!==oralInput) oralInput.value = dv(rec.oral);
   const oralCell = oralInput ? oralInput.parentElement : null;
   if(oralCell){
     let btn = oralCell.querySelector('.reset-btn');
@@ -1376,7 +1404,7 @@ function renderMonitorTable(){
       const rec = getMonRecord(s.id);
       const mg = monthGradeOf(rec);
       const oralCell = '<td style="position:relative;">'
-        +'<input class="cell-input" type="number" min="0" data-field="oral" value="'+rec.oral+'" onchange="updateMonField(\''+s.id+'\',\'oral\',this.value)">'
+        +'<input class="cell-input" type="number" min="0" inputmode="decimal" enterkeyhint="next" onfocus="this.select()" data-field="oral" value="'+dv(rec.oral)+'" onchange="updateMonField(\''+s.id+'\',\'oral\',this.value)">'
         + (rec.oralManual ? '<button class="del-btn reset-btn" style="width:20px;height:20px;font-size:10px;position:absolute;top:2px;left:0;border-color:var(--gold);color:var(--gold-dark);" title="إعادة الاحتساب من التفاصيل" onclick="resetOralAuto(\''+s.id+'\')">↻</button>' : '')
         +'</td>';
       return '<tr data-mrow="'+s.id+'">'
@@ -1393,7 +1421,7 @@ function renderMonitorTable(){
   }
 }
 function monCell(id, field, val){
-  return '<td><input class="cell-input" type="number" min="0" data-field="'+field+'" value="'+val+'" onchange="updateMonField(\''+id+'\',\''+field+'\',this.value)"></td>';
+  return '<td><input class="cell-input" type="number" min="0" inputmode="decimal" enterkeyhint="next" onfocus="this.select()" data-field="'+field+'" value="'+dv(val)+'" onchange="updateMonField(\''+id+'\',\''+field+'\',this.value)"></td>';
 }
 
 function pushMonthToMain(){
