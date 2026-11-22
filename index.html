@@ -562,7 +562,9 @@
           <option value="sem2">السعي: الفصل الثاني فقط</option>
           <option value="sem12">السعي: الفصل الأول + الثاني (÷2)</option>
         </select>
-        <button class="btn gold" onclick="calcEffort()">🧮 احتساب السعي</button>
+        <button class="btn gold" onclick="calcEffort('A')">🧮 سعي الفصل الأول</button>
+        <button class="btn gold" onclick="calcEffort('B')">🧮 سعي الفصل الثاني</button>
+        <button class="btn gold" onclick="calcEffort('Y')">🧮 السعي السنوي</button>
         <button class="btn" onclick="clearEffort()">↩ مسح السعي</button>
         <div class="search-box">
           <span>🔎</span>
@@ -1074,10 +1076,13 @@ function setAnnualMode(v){
   state.meta.annualMode=v; delete state.meta.divideAnnual;
   scheduleCloudSave();
 }
-function calcEffort(){
+function calcEffort(which){
   const list=state.sections[currentSection]||[];
-  list.forEach(s=>{ s.effortAManual=false; s.effortBManual=false; s.annualManual=false;
-    s.effortA=autoEffortA(s); s.effortB=autoEffortB(s); s.annual=autoAnnual(s); });
+  list.forEach(s=>{
+    if(which==='A'){ s.effortAManual=false; s.effortA=autoEffortA(s); }
+    else if(which==='B'){ s.effortBManual=false; s.effortB=autoEffortB(s); }
+    else if(which==='Y'){ s.annualManual=false; s.annual=autoAnnual(s); }
+  });
   renderTable(); scheduleCloudSave();
 }
 function clearEffort(){
