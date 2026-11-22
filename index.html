@@ -443,7 +443,14 @@
     body.print-register table.grades tbody td{ height:var(--rowh,6mm); padding:0 2px !important; white-space:nowrap; font-size:var(--rowfs,10px) !important; }
     body.print-register table.grades tbody td .rank-badge, body.print-register table.grades tbody td .grade-pill{ padding:0 4px !important; font-size:var(--rowfs,10px) !important; line-height:1.3; }
     body.print-register table.grades input{ font-size:var(--rowfs,10px) !important; height:auto !important; }
-    body.print-register .panel{ page-break-inside:avoid; page-break-after:avoid; }
+    body.print-register .panel{ page-break-inside:auto !important; page-break-before:avoid !important; margin-top:0 !important; }
+    body.print-register #app > *{ page-break-before:avoid; }
+    body.print-register table.grades thead th{ color:#F3ECD8 !important; font-size:10px !important; line-height:1.25; padding:3px 2px !important; border:1px solid #888 !important; }
+    body.print-register table.grades thead th.group-head-1{ background:#EFE4C9 !important; color:#1B2A4A !important; }
+    body.print-register table.grades thead th small{ font-size:9px !important; }
+    body.print-register table.grades tbody td{ border:1px solid #999 !important; }
+    body.print-register table.grades td.name-cell{ width:30%; min-width:0 !important; text-align:start; padding-inline-start:4px !important; }
+    body.print-register table.grades td.name-cell input{ overflow:visible; text-overflow:clip; }
   }
 </style>
 </head>
