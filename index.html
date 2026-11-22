@@ -555,6 +555,15 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="btn gold" onclick="addStudent()">➕ إضافة طالب</button>
         <button class="btn gold" onclick="openBulkAdd()">📋 إضافة مجموعة (لصق)</button>
+        <select class="sortsel" id="annualModeSel" onchange="setAnnualMode(this.value)" title="طريقة حساب السعي السنوي">
+          <option value="auto">السعي: تلقائي (حسب الدرجات المُدخلة)</option>
+          <option value="div3">السعي: قسمة على 3 (فصل1 + نصف السنة + فصل2)</option>
+          <option value="sem1">السعي: الفصل الأول فقط</option>
+          <option value="sem2">السعي: الفصل الثاني فقط</option>
+          <option value="sem12">السعي: الفصل الأول + الثاني (÷2)</option>
+        </select>
+        <button class="btn gold" onclick="calcEffort()">🧮 احتساب السعي</button>
+        <button class="btn" onclick="clearEffort()">↩ مسح السعي</button>
         <div class="search-box">
           <span>🔎</span>
           <input id="searchBox" placeholder="بحث بالاسم..." oninput="renderTable()">
@@ -1047,10 +1056,38 @@ function autoEffortB(s){
   if(vals.length===0) return 0;
   return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
 }
-function autoAnnual(s){ return Math.round((Number(s.effortA||0)+Number(s.midYear||0)+Number(s.effortB||0))/3); }
+function annualMode(){ const m=state.meta||{}; return m.annualMode || (m.divideAnnual?'div3':'auto'); }
+function autoAnnual(s){
+  const A=Number(s.effortA||0), M=Number(s.midYear||0), B=Number(s.effortB||0);
+  const mode=annualMode();
+  if(mode==='div3') return Math.round((A+M+B)/3);
+  if(mode==='sem1') return Math.round(A);
+  if(mode==='sem2') return Math.round(B);
+  if(mode==='sem12') return Math.round((A+B)/2);
+  const parts=[A,M,B]; const n=parts.filter(x=>x>0).length;
+  return n? Math.round((A+M+B)/n) : 0;
+}
+function updateDivideBtn(){
+  const el=document.getElementById('annualModeSel'); if(el) el.value=annualMode();
+}
+function setAnnualMode(v){
+  state.meta.annualMode=v; delete state.meta.divideAnnual;
+  scheduleCloudSave();
+}
+function calcEffort(){
+  const list=state.sections[currentSection]||[];
+  list.forEach(s=>{ s.effortAManual=false; s.effortBManual=false; s.annualManual=false;
+    s.effortA=autoEffortA(s); s.effortB=autoEffortB(s); s.annual=autoAnnual(s); });
+  renderTable(); scheduleCloudSave();
+}
+function clearEffort(){
+  if(!confirm('مسح السعي (معدل الفصلين والسعي السنوي) لهذه الشعبة؟ درجات الأشهر ونصف السنة تبقى.')) return;
+  (state.sections[currentSection]||[]).forEach(s=>{ s.effortA=0; s.effortB=0; s.annual=0; s.effortAManual=false; s.effortBManual=false; s.annualManual=false; });
+  renderTable(); scheduleCloudSave();
+}
 function recomputeDerived(s){
-  if(!s.effortAManual) s.effortA = autoEffortA(s);
-  if(!s.effortBManual) s.effortB = autoEffortB(s);
+ 
+ 
   if(!s.annualManual) s.annual = autoAnnual(s);
 }
 function pctOf(s){ return Number(s.annual||0); }
@@ -1220,12 +1257,12 @@ function updateField(id, field, value){
   const s = state.sections[currentSection].find(x=>x.id===id);
   if(!s) return;
   if(field==='name'){ s.name = value; renderTable(); scheduleCloudSave(); return; }
-  else if(field==='midYear'){ s.midYear = clamp(value,100); if(!s.annualManual) s.annual = autoAnnual(s); }
-  else if(field==='effortA'){ s.effortA = clamp(value,100); s.effortAManual = true; if(!s.annualManual) s.annual = autoAnnual(s); }
-  else if(field==='effortB'){ s.effortB = clamp(value,100); s.effortBManual = true; if(!s.annualManual) s.annual = autoAnnual(s); }
+  else if(field==='midYear'){ s.midYear = clamp(value,100); }
+  else if(field==='effortA'){ s.effortA = clamp(value,100); s.effortAManual = true; }
+  else if(field==='effortB'){ s.effortB = clamp(value,100); s.effortBManual = true; }
   else if(field==='annual'){ s.annual = clamp(value,100); s.annualManual = true; }
-  else if(SEM_A_MONTHS.includes(field)){ s[field] = clamp(value,100); if(!s.effortAManual) s.effortA = autoEffortA(s); if(!s.annualManual) s.annual = autoAnnual(s); }
-  else if(SEM_B_MONTHS.includes(field)){ s[field] = clamp(value,100); if(!s.effortBManual) s.effortB = autoEffortB(s); if(!s.annualManual) s.annual = autoAnnual(s); }
+  else if(SEM_A_MONTHS.includes(field)){ s[field] = clamp(value,100); }
+  else if(SEM_B_MONTHS.includes(field)){ s[field] = clamp(value,100); }
   const sortMode = document.getElementById('sortSel') ? document.getElementById('sortSel').value : 'entry';
   if(sortMode==='rank'){ renderTable(); } else { refreshDerivedRow(s); }
   scheduleCloudSave();
@@ -1286,6 +1323,7 @@ function resetComputed(id, field, manualField){
 function fmtPct(p){ return p.toFixed(2)+'%'; }
 
 function renderTable(){
+  updateDivideBtn();
   if(currentSection==='overview') return;
   const list = state.sections[currentSection];
   const ranks = computeRanks(list);
@@ -1457,7 +1495,6 @@ function pushMonthToMain(){
     const rec = getMonRecord(s.id);
     const mg = monthGradeOf(rec);
     s[targetField] = mg;
-    recomputeDerived(s);
   });
   alert('تم نقل الدرجات بنجاح. يمكنك مراجعتها من «السجل الرئيسي».');
   if(currentMode==='main') renderTable();
