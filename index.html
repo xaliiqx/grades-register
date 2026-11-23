@@ -434,6 +434,7 @@
   }
 
   .print-reg-title{ display:none; }
+  .grade-pill:empty, .rank-badge:empty{ display:none !important; }
   @media print{
     body:not(.print-lesson-mode) header.ledger-head{ display:none !important; }
     body:not(.print-lesson-mode) .print-reg-title{ display:block !important; text-align:center; margin:0 0 4mm; color:#000; }
@@ -1097,6 +1098,7 @@ function recomputeDerived(s){
 }
 function pctOf(s){ return Number(s.annual||0); }
 function gradeOf(pct){
+  if(!(pct>0)) return {label:'', cls:'none'};
   if(pct>=90) return {label:'ممتاز', cls:'excellent'};
   if(pct>=80) return {label:'جيد جدًا', cls:'vgood'};
   if(pct>=70) return {label:'جيد', cls:'good'};
@@ -1108,7 +1110,7 @@ function computeRanks(list){
   const withPct = list.map(s=>({id:s.id, pct:pctOf(s)}));
   withPct.sort((a,b)=>b.pct-a.pct);
   const ranks = {}; let rank=0, prevPct=null, seen=0;
-  withPct.forEach(item=>{ seen++; if(item.pct!==prevPct){ rank=seen; prevPct=item.pct; } ranks[item.id]=rank; });
+  withPct.forEach(item=>{ seen++; if(item.pct!==prevPct){ rank=seen; prevPct=item.pct; } ranks[item.id]= item.pct>0 ? rank : ''; });
   return ranks;
 }
 function updateMeta(key,val){ state.meta[key]=val; scheduleCloudSave(); }
@@ -1382,9 +1384,10 @@ function renderSummary(list){
   const total = list.length;
   const pcts = list.map(pctOf);
   const passCount = pcts.filter(p=>p>=50).length;
-  const failCount = total - passCount;
-  const successRate = (passCount/total*100).toFixed(1);
-  const avg = (pcts.reduce((a,b)=>a+b,0)/total).toFixed(2);
+  const rated = pcts.filter(p=>p>0).length;
+  const failCount = rated - passCount;
+  const successRate = rated ? (passCount/rated*100).toFixed(1) : '0.0';
+  const avg = rated ? (pcts.reduce((a,b)=>a+b,0)/rated).toFixed(2) : '0.00';
   let topIdx=0; pcts.forEach((p,i)=>{ if(p>pcts[topIdx]) topIdx=i; });
   const top = list[topIdx];
   bar.innerHTML = stat('إجمالي الطلاب', total,'') + stat('الناجحون', passCount,'pass-stat') + stat('الراسبون', failCount,'fail-stat')
